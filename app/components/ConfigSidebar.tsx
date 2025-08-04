@@ -19,6 +19,7 @@ import {
   TranslationConfig as ITranslationConfig,
 } from "../lib/translation/translator";
 import { OpenAITranslator } from "../lib/translation/openai-translator";
+import { AnthropicTranslator } from "../lib/translation/anthropic-translator";
 
 export interface ConfigSidebarProps {
   config: ITranslationConfig;
@@ -78,6 +79,14 @@ export function ConfigSidebar({
     try {
       if (config.provider.toLowerCase() === "openai") {
         const translator = new OpenAITranslator(config);
+        const result = await translator.testConnection();
+
+        setConnectionStatus({
+          status: result.success ? "success" : "error",
+          message: result.error || "Connection successful!",
+        });
+      } else if (config.provider.toLowerCase() === "anthropic") {
+        const translator = new AnthropicTranslator(config);
         const result = await translator.testConnection();
 
         setConnectionStatus({
