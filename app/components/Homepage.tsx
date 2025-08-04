@@ -55,12 +55,27 @@ export function Homepage() {
     {
       name: "OpenAI",
       status: "Available",
-      models: ["GPT-4", "GPT-4 Turbo", "GPT-3.5 Turbo"],
+      models: [
+        "GPT-4o",
+        "GPT-4o Mini",
+        "GPT-4 Turbo",
+        "GPT-4",
+        "GPT-3.5 Turbo",
+        "o1",
+        "o1-mini",
+        "o3-mini",
+      ],
     },
     {
       name: "Anthropic",
       status: "Available",
-      models: ["Claude 3 Opus", "Claude 3 Sonnet", "Claude 3 Haiku"],
+      models: [
+        "Claude 3.5 Sonnet",
+        "Claude 3.5 Haiku",
+        "Claude 3 Opus",
+        "Claude 3 Sonnet",
+        "Claude 3 Haiku",
+      ],
     },
   ];
 
@@ -230,7 +245,7 @@ export function Homepage() {
               step: "1",
               title: "Configure Your Provider",
               description:
-                "Add your OpenAI API key and select your preferred model and target language.",
+                "Add your OpenAI or Anthropic API key and select your preferred model and target language.",
               icon: "⚙️",
             },
             {

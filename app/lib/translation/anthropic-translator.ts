@@ -1,7 +1,12 @@
-import { Translator, TranslationProvider, TranslationConfig, TranslationResult } from './translator';
+import {
+  Translator,
+  TranslationProvider,
+  TranslationConfig,
+  TranslationResult,
+} from "./translator";
 
 export class AnthropicTranslator extends Translator {
-  private baseUrl = 'https://api.anthropic.com/v1';
+  private baseUrl = "https://api.anthropic.com/v1";
 
   constructor(config: TranslationConfig) {
     super(config);
@@ -12,19 +17,19 @@ export class AnthropicTranslator extends Translator {
       if (!this.validateConfig()) {
         return {
           success: false,
-          translatedValue: '',
-          error: 'Invalid configuration'
+          translatedValue: "",
+          error: "Invalid configuration",
         };
       }
 
       const prompt = this.buildTranslationPrompt(key, value);
 
       const response = await fetch(`${this.baseUrl}/messages`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.config.apiKey}`,
-          'anthropic-version': '2023-06-01'
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.config.apiKey}`,
+          "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
           model: this.config.model,
@@ -32,20 +37,20 @@ export class AnthropicTranslator extends Translator {
           temperature: 0.3,
           messages: [
             {
-              role: 'user',
-              content: prompt
-            }
+              role: "user",
+              content: prompt,
+            },
           ],
-          system: `You are a professional translator. Translate the given text from ${this.config.sourceLanguage || 'auto-detected language'} to ${this.config.targetLanguage}. Return ONLY the translated text without any explanations, quotes, or additional formatting.`
-        })
+          system: `You are a professional translator. Translate the given text from ${this.config.sourceLanguage || "auto-detected language"} to ${this.config.targetLanguage}. Return ONLY the translated text without any explanations, quotes, or additional formatting.`,
+        }),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         return {
           success: false,
-          translatedValue: '',
-          error: `Anthropic API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`
+          translatedValue: "",
+          error: `Anthropic API error: ${response.status} - ${errorData.error?.message || "Unknown error"}`,
         };
       }
 
@@ -55,36 +60,38 @@ export class AnthropicTranslator extends Translator {
       if (!translatedValue) {
         return {
           success: false,
-          translatedValue: '',
-          error: 'No translation received from Anthropic'
+          translatedValue: "",
+          error: "No translation received from Anthropic",
         };
       }
 
       return {
         success: true,
         translatedValue,
-        error: undefined
+        error: undefined,
       };
-
     } catch (error) {
       return {
         success: false,
-        translatedValue: '',
-        error: `Translation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        translatedValue: "",
+        error: `Translation failed: ${error instanceof Error ? error.message : "Unknown error"}`,
       };
     }
   }
 
   validateConfig(): boolean {
-    if (!this.config.apiKey || this.config.apiKey.trim() === '') {
+    if (!this.config.apiKey || this.config.apiKey.trim() === "") {
       return false;
     }
 
-    if (!this.config.targetLanguage || this.config.targetLanguage.trim() === '') {
+    if (
+      !this.config.targetLanguage ||
+      this.config.targetLanguage.trim() === ""
+    ) {
       return false;
     }
 
-    if (!this.config.model || this.config.model.trim() === '') {
+    if (!this.config.model || this.config.model.trim() === "") {
       return false;
     }
 
@@ -98,8 +105,15 @@ export class AnthropicTranslator extends Translator {
 
   getProvider(): TranslationProvider {
     return {
-      name: 'Anthropic',
-      models: ['claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307']
+      name: "Anthropic",
+      models: [
+        "claude-3-5-sonnet-20241022",
+        "claude-3-5-sonnet-20240620",
+        "claude-3-5-haiku-20241022",
+        "claude-3-opus-20240229",
+        "claude-3-sonnet-20240229",
+        "claude-3-haiku-20240307",
+      ],
     };
   }
 
@@ -115,39 +129,39 @@ Please translate the text to ${this.config.targetLanguage}. Consider the context
     try {
       // Test with a simple message to verify API key and connection
       const response = await fetch(`${this.baseUrl}/messages`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.config.apiKey}`,
-          'anthropic-version': '2023-06-01'
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.config.apiKey}`,
+          "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
           model: this.config.model,
           max_tokens: 10,
           messages: [
             {
-              role: 'user',
-              content: 'Hello'
-            }
-          ]
-        })
+              role: "user",
+              content: "Hello",
+            },
+          ],
+        }),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         return {
           success: false,
-          error: `API connection failed: ${response.status} - ${errorData.error?.message || 'Invalid API key or connection error'}`
+          error: `API connection failed: ${response.status} - ${errorData.error?.message || "Invalid API key or connection error"}`,
         };
       }
 
       return {
-        success: true
+        success: true,
       };
     } catch (error) {
       return {
         success: false,
-        error: `Connection test failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        error: `Connection test failed: ${error instanceof Error ? error.message : "Unknown error"}`,
       };
     }
   }
