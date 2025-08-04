@@ -131,10 +131,22 @@ Please translate the text to ${this.config.targetLanguage}. Consider the context
 
   async testConnection(): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await fetch(`${this.baseUrl}/models`, {
+      const response = await fetch(`${this.baseUrl}/chat/completions`, {
+        method: "POST",
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${this.config.apiKey}`,
         },
+        body: JSON.stringify({
+          model: this.config.model,
+          messages: [
+            {
+              role: "user",
+              content: "Hello",
+            },
+          ],
+          max_tokens: 5,
+        }),
       });
 
       if (!response.ok) {

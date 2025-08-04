@@ -212,8 +212,10 @@ class AnthropicTranslator extends Translator { ... }
 #### Parallel Processing System
 - **Individual key processing** for maximum reliability
 - **Parallel request processing** with rate limiting
-- **Automatic fallback** to individual processing
+- **Server-side API endpoints** for secure translation
 - **Progress tracking** with real-time metrics
+- **Smart caching** to avoid duplicate API calls
+- **CORS bypass** via TanStack Start API routes
 
 #### Caching Layer
 - **In-memory caching** of translations
