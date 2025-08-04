@@ -28,6 +28,8 @@ export interface ConfigSidebarProps {
   onClose: () => void;
   onSave: () => void;
   className?: string;
+  useOptimizedTranslation?: boolean;
+  onOptimizationToggle?: (enabled: boolean) => void;
 }
 
 export function ConfigSidebar({
@@ -37,6 +39,8 @@ export function ConfigSidebar({
   onClose,
   onSave,
   className,
+  useOptimizedTranslation = true,
+  onOptimizationToggle,
 }: ConfigSidebarProps) {
   const [isTestingConnection, setIsTestingConnection] = React.useState(false);
   const [connectionStatus, setConnectionStatus] = React.useState<{
@@ -313,6 +317,51 @@ export function ConfigSidebar({
                 <AlertDescription>{connectionStatus.message}</AlertDescription>
               </Alert>
             )}
+
+            {/* Translation Optimization */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Translation Mode
+              </label>
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">
+                      {useOptimizedTranslation ? "⚡ Optimized" : "🔄 Legacy"}
+                    </span>
+                    {useOptimizedTranslation && (
+                      <Badge variant="success" className="text-xs">
+                        Up to 10x faster
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1">
+                    {useOptimizedTranslation
+                      ? "Batch processing with parallel requests and caching"
+                      : "Sequential translation, one key at a time"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onOptimizationToggle?.(!useOptimizedTranslation)
+                  }
+                  className={cn(
+                    "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
+                    useOptimizedTranslation ? "bg-blue-600" : "bg-gray-200",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                      useOptimizedTranslation
+                        ? "translate-x-5"
+                        : "translate-x-0",
+                    )}
+                  />
+                </button>
+              </div>
+            </div>
 
             {/* Action Buttons */}
             <div className="space-y-3 pt-4 border-t">

@@ -22,6 +22,12 @@ import {
 } from "../lib/translation/translator";
 import { TranslatorFactory } from "../lib/translation/translator-factory";
 import { JSONProcessor } from "../lib/json-processor";
+import {
+  BatchTranslator,
+  BatchTranslationItem,
+  BatchTranslationResult,
+  BatchProgress,
+} from "../lib/translation/batch-translator";
 
 interface TranslationState {
   originalJSON: string;
@@ -34,6 +40,9 @@ interface TranslationState {
   isPaused: boolean;
   errors: string[];
   sidebarOpen: boolean;
+  batchProgress?: BatchProgress;
+  estimatedTime?: number;
+  useOptimizedTranslation: boolean;
 }
 
 export function TranslationPage() {
@@ -54,6 +63,7 @@ export function TranslationPage() {
     isPaused: false,
     errors: [],
     sidebarOpen: false,
+    useOptimizedTranslation: true,
   });
 
   const translationInProgress = React.useRef(false);
@@ -213,6 +223,85 @@ export function TranslationPage() {
   };
 
   const processTranslations = async () => {
+    if (state.useOptimizedTranslation) {
+      await processOptimizedTranslations();
+    } else {
+      await processLegacyTranslations();
+    }
+  };
+
+  const processOptimizedTranslations = async () => {
+    const batchTranslator = new BatchTranslator(state.config);
+
+    // Get pending items
+    const pendingItems = state.progressItems
+      .filter((item) => item.status === "pending")
+      .map((item, index) => ({
+        id: `${index}`,
+        key: item.key,
+        value: item.originalValue,
+      }));
+
+    if (pendingItems.length === 0) {
+      await generateTranslatedJSON();
+      setState((prev) => ({ ...prev, isTranslating: false }));
+      return;
+    }
+
+    // Estimate translation time
+    const estimatedTime = batchTranslator.estimateTranslationTime(
+      pendingItems.length,
+    );
+    setState((prev) => ({ ...prev, estimatedTime }));
+
+    try {
+      await batchTranslator.translateBatch(
+        pendingItems,
+        // Progress callback
+        (progress: BatchProgress) => {
+          setState((prev) => ({ ...prev, batchProgress: progress }));
+        },
+        // Batch complete callback
+        (results: BatchTranslationResult[]) => {
+          setState((prev) => ({
+            ...prev,
+            progressItems: prev.progressItems.map((pItem) => {
+              const result = results.find((r) => r.key === pItem.key);
+              if (result) {
+                return {
+                  ...pItem,
+                  status: result.success ? "completed" : "error",
+                  translatedValue: result.success
+                    ? result.translatedValue
+                    : undefined,
+                  error: result.success ? undefined : result.error,
+                };
+              }
+              return pItem;
+            }),
+          }));
+        },
+      );
+
+      // Generate translated JSON when done
+      if (translationInProgress.current) {
+        await generateTranslatedJSON();
+        setState((prev) => ({ ...prev, isTranslating: false }));
+      }
+    } catch (error) {
+      console.error("Batch translation failed:", error);
+      setState((prev) => ({
+        ...prev,
+        errors: [
+          ...prev.errors,
+          `Batch translation failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        ],
+        isTranslating: false,
+      }));
+    }
+  };
+
+  const processLegacyTranslations = async () => {
     const translator = TranslatorFactory.createTranslator(state.config);
 
     // Start from current index and process pending items
@@ -442,6 +531,9 @@ export function TranslationPage() {
               onResume={handleResumeTranslation}
               onStop={handleStopTranslation}
               onRetryFailed={handleRetryFailed}
+              batchProgress={state.batchProgress}
+              estimatedTime={state.estimatedTime}
+              useOptimizedTranslation={state.useOptimizedTranslation}
             />
           </div>
         )}
@@ -549,6 +641,10 @@ export function TranslationPage() {
         isOpen={state.sidebarOpen}
         onClose={() => setState((prev) => ({ ...prev, sidebarOpen: false }))}
         onSave={handleConfigSave}
+        useOptimizedTranslation={state.useOptimizedTranslation}
+        onOptimizationToggle={(enabled) =>
+          setState((prev) => ({ ...prev, useOptimizedTranslation: enabled }))
+        }
       />
     </div>
   );
