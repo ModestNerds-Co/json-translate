@@ -369,9 +369,9 @@ export function TranslationPage() {
     )?.name || state.config.targetLanguage;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b shadow-sm">
+      <div className="bg-white border-b shadow-sm flex-shrink-0">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
@@ -408,123 +408,137 @@ export function TranslationPage() {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-6 py-6 space-y-6">
+      <div className="container mx-auto px-6 py-6 flex-1 flex flex-col min-h-0 space-y-6">
         {/* Configuration Required Alert */}
         {!state.isConfigured && (
-          <Alert>
-            <AlertDescription>
-              Please configure your translation provider settings to get
-              started.
-              <Button
-                variant="link"
-                className="ml-2 p-0 h-auto"
-                onClick={() =>
-                  setState((prev) => ({ ...prev, sidebarOpen: true }))
-                }
-              >
-                Open Settings
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* JSON Editors */}
-        {state.isConfigured && (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            {/* Source JSON */}
-            <JSONEditor
-              value={state.originalJSON}
-              onChange={(value) =>
-                setState((prev) => ({ ...prev, originalJSON: value }))
-              }
-              title="Source JSON"
-              description="Paste or upload your JSON file to translate"
-              showValidation={true}
-              showStats={true}
-            />
-
-            {/* Translated JSON */}
-            <JSONEditor
-              value={state.translatedJSON}
-              onChange={() => {}} // Read-only
-              title="Translated JSON"
-              description={
-                hasCompletedTranslations
-                  ? `Translated to ${targetLanguageName}`
-                  : "Translation results will appear here"
-              }
-              readonly={true}
-              showValidation={false}
-              showStats={false}
-              onDownload={
-                state.translatedJSON ? handleDownloadTranslated : undefined
-              }
-              downloadFilename={`translation_${state.config.targetLanguage}.json`}
-            />
+          <div className="flex-shrink-0">
+            <Alert>
+              <AlertDescription>
+                Please configure your translation provider settings to get
+                started.
+                <Button
+                  variant="link"
+                  className="ml-2 p-0 h-auto"
+                  onClick={() =>
+                    setState((prev) => ({ ...prev, sidebarOpen: true }))
+                  }
+                >
+                  Open Settings
+                </Button>
+              </AlertDescription>
+            </Alert>
           </div>
         )}
 
         {/* Translation Progress */}
         {state.isConfigured && state.progressItems.length > 0 && (
-          <TranslationProgress
-            items={state.progressItems}
-            currentIndex={state.currentIndex}
-            isTranslating={state.isTranslating}
-            onStart={handleStartTranslation}
-            onPause={handlePauseTranslation}
-            onResume={handleResumeTranslation}
-            onStop={handleStopTranslation}
-            onRetryFailed={handleRetryFailed}
-          />
+          <div className="flex-shrink-0">
+            <TranslationProgress
+              items={state.progressItems}
+              currentIndex={state.currentIndex}
+              isTranslating={state.isTranslating}
+              onStart={handleStartTranslation}
+              onPause={handlePauseTranslation}
+              onResume={handleResumeTranslation}
+              onStop={handleStopTranslation}
+              onRetryFailed={handleRetryFailed}
+            />
+          </div>
+        )}
+
+        {/* JSON Editors - Full Height */}
+        {state.isConfigured && (
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 flex-1 min-h-0">
+            {/* Source JSON */}
+            <div className="flex flex-col min-h-0">
+              <JSONEditor
+                value={state.originalJSON}
+                onChange={(value) =>
+                  setState((prev) => ({ ...prev, originalJSON: value }))
+                }
+                title="Source JSON"
+                description="Paste or upload your JSON file to translate"
+                showValidation={true}
+                showStats={true}
+                className="h-full"
+              />
+            </div>
+
+            {/* Translated JSON */}
+            <div className="flex flex-col min-h-0">
+              <JSONEditor
+                value={state.translatedJSON}
+                onChange={() => {}} // Read-only
+                title="Translated JSON"
+                description={
+                  hasCompletedTranslations
+                    ? `Translated to ${targetLanguageName}`
+                    : "Translation results will appear here"
+                }
+                readonly={true}
+                showValidation={false}
+                showStats={false}
+                onDownload={
+                  state.translatedJSON ? handleDownloadTranslated : undefined
+                }
+                downloadFilename={`translation_${state.config.targetLanguage}.json`}
+                className="h-full"
+              />
+            </div>
+          </div>
         )}
 
         {/* Export Actions */}
         {state.translatedJSON && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Export Translation</CardTitle>
-              <CardDescription>
-                Download or copy your translated JSON file
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex gap-4">
-              <Button
-                onClick={handleDownloadTranslated}
-                className="flex items-center gap-2"
-              >
-                📥 Download JSON
-              </Button>
-              <Button
-                onClick={handleCopyToClipboard}
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                📋 Copy to Clipboard
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="flex-shrink-0">
+            <Card>
+              <CardHeader>
+                <CardTitle>Export Translation</CardTitle>
+                <CardDescription>
+                  Download or copy your translated JSON file
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex gap-4">
+                <Button
+                  onClick={handleDownloadTranslated}
+                  className="flex items-center gap-2"
+                >
+                  📥 Download JSON
+                </Button>
+                <Button
+                  onClick={handleCopyToClipboard}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  📋 Copy to Clipboard
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         {/* Errors */}
         {state.errors.length > 0 && (
-          <Alert variant="destructive">
-            <AlertDescription>
-              <strong>Errors occurred:</strong>
-              <ul className="mt-2 list-disc list-inside space-y-1">
-                {state.errors.map((error, index) => (
-                  <li key={index}>{error}</li>
-                ))}
-              </ul>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-2"
-                onClick={() => setState((prev) => ({ ...prev, errors: [] }))}
-              >
-                Clear Errors
-              </Button>
-            </AlertDescription>
-          </Alert>
+          <div className="flex-shrink-0">
+            <Alert variant="destructive">
+              <AlertDescription>
+                <strong>Errors occurred:</strong>
+                <ul className="mt-2 list-disc list-inside space-y-1">
+                  {state.errors.map((error, index) => (
+                    <li key={index}>{error}</li>
+                  ))}
+                </ul>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => setState((prev) => ({ ...prev, errors: [] }))}
+                >
+                  Clear Errors
+                </Button>
+              </AlertDescription>
+            </Alert>
+          </div>
         )}
       </div>
 
