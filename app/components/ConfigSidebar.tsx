@@ -370,7 +370,7 @@ export function ConfigSidebar({
                   </div>
                   <p className="text-xs text-gray-600 mt-1">
                     {useOptimizedTranslation
-                      ? "Batch processing with parallel requests and caching"
+                      ? "Parallel processing with intelligent caching and rate limiting"
                       : "Sequential translation, one key at a time"}
                   </p>
                 </div>

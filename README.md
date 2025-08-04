@@ -8,8 +8,8 @@ A powerful, AI-powered JSON localization file translator with real-time streamin
 
 ### 🚀 **Performance Optimized**
 - **Up to 10x faster** than traditional key-by-key translation
-- **Batch processing** with 15-20 keys per API request
-- **Parallel processing** with intelligent rate limiting
+- **Parallel processing** with intelligent rate limiting and caching
+- **Individual key translation** for maximum reliability
 - **Smart caching** to avoid duplicate translations
 - **Real-time streaming** of results as they complete
 
@@ -122,7 +122,7 @@ Watch translations appear live as they complete:
 - ✅ Individual mode shows results after each key
 - ✅ Valid JSON maintained throughout the process
 
-#### Batch Processing
+#### Parallel Processing
 Optimal performance for large files:
 - **Small files** (1-50 keys): ~10-30 seconds
 - **Medium files** (50-500 keys): ~1-5 minutes
@@ -131,8 +131,8 @@ Optimal performance for large files:
 #### Error Handling
 Robust error recovery:
 - **Automatic retries** with exponential backoff
-- **Fallback strategies** if batch processing fails
-- **Detailed error reporting** with retry options
+- **Reliable individual processing** eliminates batch failures
+- **Detailed error reporting** with granular retry options
 - **Partial success handling** to save completed work
 
 ## ⚙️ Configuration
@@ -157,9 +157,9 @@ Robust error recovery:
 - **Anthropic Tier 1**: 300 RPM (default)
 - **Anthropic Tier 2+**: 1000+ RPM
 
-#### Batch Sizes
-- **OpenAI**: 20 keys per batch (default)
-- **Anthropic**: 15 keys per batch (default)
+#### Concurrency Limits
+- **OpenAI**: 12 concurrent requests (default)
+- **Anthropic**: 10 concurrent requests (default)
 - **Custom**: Adjust based on your API limits
 
 ### Notification Settings
@@ -184,7 +184,7 @@ json-translate/
 │   │   │   ├── translator.ts        # Abstract base class
 │   │   │   ├── openai-translator.ts # OpenAI implementation
 │   │   │   ├── anthropic-translator.ts # Anthropic implementation
-│   │   │   ├── batch-translator.ts  # Optimized batch processor
+│   │   │   ├── parallel-translator.ts  # Optimized parallel processor
 │   │   │   └── translator-factory.ts # Provider factory
 │   │   ├── json-processor.ts # JSON parsing and manipulation
 │   │   ├── notifications.ts  # System notification manager
@@ -209,8 +209,8 @@ class OpenAITranslator extends Translator { ... }
 class AnthropicTranslator extends Translator { ... }
 ```
 
-#### Batch Processing System
-- **Intelligent grouping** of related keys
+#### Parallel Processing System
+- **Individual key processing** for maximum reliability
 - **Parallel request processing** with rate limiting
 - **Automatic fallback** to individual processing
 - **Progress tracking** with real-time metrics
@@ -366,7 +366,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🗺️ Roadmap
 
 ### v2.0 Features (Planned)
-- [ ] **Multi-file batch processing**
+- [ ] **Multi-file parallel processing**
 - [ ] **Translation memory integration**
 - [ ] **Custom glossary support**
 - [ ] **Project management features**

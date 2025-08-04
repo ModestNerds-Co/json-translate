@@ -32,14 +32,13 @@ export interface TranslationProgressProps {
   onRetryFailed: () => void;
   className?: string;
   showDetails?: boolean;
-  batchProgress?: {
+  parallelProgress?: {
     completed: number;
     total: number;
     percentage: number;
-    currentBatch: number;
-    totalBatches: number;
     itemsPerSecond: number;
     estimatedTimeRemaining: number;
+    activeRequests: number;
   };
   estimatedTime?: number;
   useOptimizedTranslation?: boolean;
@@ -58,7 +57,7 @@ export function TranslationProgress({
   onRetryFailed,
   className,
   showDetails = true,
-  batchProgress,
+  parallelProgress,
   estimatedTime,
   useOptimizedTranslation = true,
   isStreaming = false,
@@ -104,8 +103,8 @@ export function TranslationProgress({
         : "Translation completed successfully";
     }
     if (isTranslating) {
-      if (useOptimizedTranslation && batchProgress) {
-        return `Processing batch ${batchProgress.currentBatch}/${batchProgress.totalBatches} (${batchProgress.itemsPerSecond.toFixed(1)} items/sec)`;
+      if (useOptimizedTranslation && parallelProgress) {
+        return `Processing ${parallelProgress.activeRequests} parallel requests (${parallelProgress.itemsPerSecond.toFixed(1)} items/sec)`;
       }
       return `Translating: ${currentItem?.key || "Processing..."}`;
     }
@@ -240,11 +239,11 @@ export function TranslationProgress({
               { className: "flex items-center gap-2" },
               React.createElement("span", null, `${Math.round(progress)}%`),
               useOptimizedTranslation &&
-                batchProgress &&
+                parallelProgress &&
                 React.createElement(
                   "span",
                   { className: "text-xs text-blue-600" },
-                  `• ${batchProgress.itemsPerSecond.toFixed(1)}/s`,
+                  `• ${parallelProgress.itemsPerSecond.toFixed(1)}/s`,
                 ),
             ),
           ),
@@ -305,13 +304,13 @@ export function TranslationProgress({
             React.createElement(
               "span",
               { className: "font-medium" },
-              useOptimizedTranslation ? "Processing batch:" : "Translating:",
+              useOptimizedTranslation ? "Processing parallel:" : "Translating:",
             ),
-            useOptimizedTranslation && batchProgress
+            useOptimizedTranslation && parallelProgress
               ? React.createElement(
                   "span",
                   { className: "text-sm" },
-                  `Batch ${batchProgress.currentBatch}/${batchProgress.totalBatches} • ${batchProgress.estimatedTimeRemaining > 0 ? `${Math.ceil(batchProgress.estimatedTimeRemaining)}s remaining` : "Almost done"}`,
+                  `${parallelProgress.activeRequests} active requests • ${parallelProgress.estimatedTimeRemaining > 0 ? `${Math.ceil(parallelProgress.estimatedTimeRemaining)}s remaining` : "Almost done"}`,
                 )
               : currentItem &&
                   React.createElement(

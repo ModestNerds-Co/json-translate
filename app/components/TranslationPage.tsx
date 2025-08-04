@@ -24,11 +24,11 @@ import {
 import { TranslatorFactory } from "../lib/translation/translator-factory";
 import { JSONProcessor } from "../lib/json-processor";
 import {
-  BatchTranslator,
-  BatchTranslationItem,
-  BatchTranslationResult,
-  BatchProgress,
-} from "../lib/translation/batch-translator";
+  ParallelTranslator,
+  ParallelTranslationItem,
+  ParallelTranslationResult,
+  ParallelProgress,
+} from "../lib/translation/parallel-translator";
 import {
   notifyTranslationComplete,
   notifyTranslationStarted,
@@ -47,7 +47,7 @@ interface TranslationState {
   isPaused: boolean;
   errors: string[];
   sidebarOpen: boolean;
-  batchProgress?: BatchProgress;
+  parallelProgress?: ParallelProgress;
   estimatedTime?: number;
   useOptimizedTranslation: boolean;
   isStreaming: boolean;
@@ -201,44 +201,84 @@ export function TranslationPage() {
   const handleRetryFailed = async () => {
     if (translationInProgress.current) return;
 
-    // Reset failed items to pending
-    setState((prev) => ({
-      ...prev,
-      progressItems: prev.progressItems.map((item) => ({
-        ...item,
-        status: item.status === "error" ? "pending" : item.status,
-        error: item.status === "error" ? undefined : item.error,
-      })),
-    }));
-
-    // Find first failed item and resume from there
-    const firstFailedIndex = state.progressItems.findIndex(
+    const failedItems = state.progressItems.filter(
       (item) => item.status === "error",
     );
-    if (firstFailedIndex !== -1) {
-      translationInProgress.current = true;
+    if (failedItems.length === 0) return;
+
+    translationInProgress.current = true;
+    setState((prev) => ({
+      ...prev,
+      isTranslating: true,
+      isPaused: false,
+    }));
+
+    const parallelTranslator = new ParallelTranslator(state.config);
+
+    // Convert failed items to parallel translation format
+    const retryItems: ParallelTranslationItem[] = failedItems.map(
+      (item, index) => ({
+        id: `retry_${index}`,
+        key: item.key,
+        value: item.originalValue,
+      }),
+    );
+
+    try {
+      await parallelTranslator.translateParallel(
+        retryItems,
+        // Progress callback
+        (progress: ParallelProgress) => {
+          setState((prev) => ({ ...prev, parallelProgress: progress }));
+        },
+        // Item complete callback
+        (result: ParallelTranslationResult) => {
+          setState((prev) => {
+            const updatedItems = prev.progressItems.map((pItem) => {
+              if (result.key === pItem.key) {
+                return {
+                  ...pItem,
+                  status: result.success
+                    ? ("completed" as const)
+                    : ("error" as const),
+                  translatedValue: result.success ? result.translatedValue : "",
+                  error: result.success ? undefined : result.error,
+                };
+              }
+              return pItem;
+            });
+
+            return {
+              ...prev,
+              progressItems: updatedItems,
+            };
+          });
+        },
+      );
+
       setState((prev) => ({
         ...prev,
-        isTranslating: true,
-        isPaused: false,
-        isStreaming: true,
+        isTranslating: false,
+        parallelProgress: undefined,
       }));
 
-      try {
-        await processTranslations();
-      } catch (error) {
-        console.error("Retry failed:", error);
-        setState((prev) => ({
-          ...prev,
-          isTranslating: false,
-          errors: [
-            ...prev.errors,
-            `Retry failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-          ],
-        }));
-      } finally {
-        translationInProgress.current = false;
+      // Generate final JSON if streaming is enabled
+      if (state.enableStreaming) {
+        generateStreamingJSON();
       }
+    } catch (error) {
+      console.error("Retry failed:", error);
+      setState((prev) => ({
+        ...prev,
+        isTranslating: false,
+        parallelProgress: undefined,
+        errors: [
+          ...prev.errors,
+          `Retry failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        ],
+      }));
+    } finally {
+      translationInProgress.current = false;
     }
   };
 
@@ -251,7 +291,7 @@ export function TranslationPage() {
   };
 
   const processOptimizedTranslations = async () => {
-    const batchTranslator = new BatchTranslator(state.config);
+    const parallelTranslator = new ParallelTranslator(state.config);
 
     // Get pending items
     const pendingItems = state.progressItems
@@ -269,24 +309,23 @@ export function TranslationPage() {
     }
 
     // Estimate translation time
-    const estimatedTime = batchTranslator.estimateTranslationTime(
+    const estimatedTime = parallelTranslator.estimateTranslationTime(
       pendingItems.length,
     );
     setState((prev) => ({ ...prev, estimatedTime }));
 
     try {
-      await batchTranslator.translateBatch(
+      await parallelTranslator.translateParallel(
         pendingItems,
         // Progress callback
-        (progress: BatchProgress) => {
-          setState((prev) => ({ ...prev, batchProgress: progress }));
+        (progress: ParallelProgress) => {
+          setState((prev) => ({ ...prev, parallelProgress: progress }));
         },
-        // Batch complete callback
-        (results: BatchTranslationResult[]) => {
+        // Item complete callback
+        (result: ParallelTranslationResult) => {
           setState((prev) => {
             const updatedItems = prev.progressItems.map((pItem) => {
-              const result = results.find((r) => r.key === pItem.key);
-              if (result) {
+              if (result.key === pItem.key) {
                 return {
                   ...pItem,
                   status: result.success
@@ -301,10 +340,10 @@ export function TranslationPage() {
               return pItem;
             });
 
-            // Generate streaming JSON update after each batch
-            if (prev.enableStreaming) {
+            // Generate streaming JSON update after each completion
+            if (prev.enableStreaming && result.success) {
               console.log(
-                "Generating streaming JSON after batch completion, completed items:",
+                "Generating streaming JSON after item completion, completed items:",
                 updatedItems.filter((item) => item.status === "completed")
                   .length,
               );
@@ -352,6 +391,7 @@ export function TranslationPage() {
             ...prev,
             isTranslating: false,
             isStreaming: false,
+            parallelProgress: undefined,
           };
         });
       }
@@ -369,15 +409,16 @@ export function TranslationPage() {
         }
       }, 100);
     } catch (error) {
-      console.error("Batch translation failed:", error);
+      console.error("Parallel translation failed:", error);
       setState((prev) => ({
         ...prev,
         errors: [
           ...prev.errors,
-          `Batch translation failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+          `Parallel translation failed: ${error instanceof Error ? error.message : "Unknown error"}`,
         ],
         isTranslating: false,
         isStreaming: false,
+        parallelProgress: undefined,
       }));
 
       // Show error notification
@@ -732,7 +773,7 @@ export function TranslationPage() {
               onResume={handleResumeTranslation}
               onStop={handleStopTranslation}
               onRetryFailed={handleRetryFailed}
-              batchProgress={state.batchProgress}
+              parallelProgress={state.parallelProgress}
               estimatedTime={state.estimatedTime}
               useOptimizedTranslation={state.useOptimizedTranslation}
               isStreaming={state.isStreaming}
