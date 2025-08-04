@@ -30,6 +30,8 @@ export interface ConfigSidebarProps {
   className?: string;
   useOptimizedTranslation?: boolean;
   onOptimizationToggle?: (enabled: boolean) => void;
+  enableStreaming?: boolean;
+  onStreamingToggle?: (enabled: boolean) => void;
 }
 
 export function ConfigSidebar({
@@ -41,6 +43,8 @@ export function ConfigSidebar({
   className,
   useOptimizedTranslation = true,
   onOptimizationToggle,
+  enableStreaming = true,
+  onStreamingToggle,
 }: ConfigSidebarProps) {
   const [isTestingConnection, setIsTestingConnection] = React.useState(false);
   const [connectionStatus, setConnectionStatus] = React.useState<{
@@ -398,6 +402,49 @@ export function ConfigSidebar({
                     when the tab isn't active
                   </p>
                 </div>
+              </div>
+            </div>
+
+            {/* Streaming Settings */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Real-time Updates
+              </label>
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">
+                      {enableStreaming
+                        ? "🔄 Live Streaming"
+                        : "⏸️ Batch Updates"}
+                    </span>
+                    {enableStreaming && (
+                      <Badge variant="success" className="text-xs">
+                        Live preview
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1">
+                    {enableStreaming
+                      ? "See translation results appear in real-time as they complete"
+                      : "Update results only when entire translation finishes"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onStreamingToggle?.(!enableStreaming)}
+                  className={cn(
+                    "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
+                    enableStreaming ? "bg-blue-600" : "bg-gray-200",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                      enableStreaming ? "translate-x-5" : "translate-x-0",
+                    )}
+                  />
+                </button>
               </div>
             </div>
 

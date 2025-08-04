@@ -43,6 +43,8 @@ export interface TranslationProgressProps {
   };
   estimatedTime?: number;
   useOptimizedTranslation?: boolean;
+  isStreaming?: boolean;
+  enableStreaming?: boolean;
 }
 
 export function TranslationProgress({
@@ -59,6 +61,8 @@ export function TranslationProgress({
   batchProgress,
   estimatedTime,
   useOptimizedTranslation = true,
+  isStreaming = false,
+  enableStreaming = true,
 }: TranslationProgressProps) {
   const totalItems = items.length;
   const completedItems = items.filter(
@@ -279,6 +283,13 @@ export function TranslationProgress({
               Badge,
               { variant: "secondary" },
               "⚡ Optimized",
+            ),
+          isStreaming &&
+            enableStreaming &&
+            React.createElement(
+              Badge,
+              { variant: "success" },
+              "🔄 Live streaming",
             ),
         ),
 

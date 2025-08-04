@@ -50,6 +50,8 @@ interface TranslationState {
   batchProgress?: BatchProgress;
   estimatedTime?: number;
   useOptimizedTranslation: boolean;
+  isStreaming: boolean;
+  enableStreaming: boolean;
 }
 
 export function TranslationPage() {
@@ -71,6 +73,8 @@ export function TranslationPage() {
     errors: [],
     sidebarOpen: false,
     useOptimizedTranslation: true,
+    isStreaming: false,
+    enableStreaming: true,
   });
 
   const translationInProgress = React.useRef(false);
@@ -99,6 +103,7 @@ export function TranslationPage() {
         isTranslating: false,
         isPaused: false,
         translatedJSON: "",
+        isStreaming: false,
       }));
     } catch (error) {
       setState((prev) => ({ ...prev, progressItems: [], translatedJSON: "" }));
@@ -126,6 +131,7 @@ export function TranslationPage() {
       isTranslating: true,
       isPaused: false,
       currentIndex: 0,
+      isStreaming: true,
     }));
 
     // Request notification permission and notify start
@@ -215,6 +221,7 @@ export function TranslationPage() {
         ...prev,
         isTranslating: true,
         isPaused: false,
+        isStreaming: true,
       }));
 
       try {
@@ -273,6 +280,11 @@ export function TranslationPage() {
         // Progress callback
         (progress: BatchProgress) => {
           setState((prev) => ({ ...prev, batchProgress: progress }));
+
+          // Generate streaming JSON update
+          if (state.enableStreaming) {
+            generateStreamingJSON();
+          }
         },
         // Batch complete callback
         (results: BatchTranslationResult[]) => {
@@ -293,13 +305,22 @@ export function TranslationPage() {
               return pItem;
             }),
           }));
+
+          // Generate streaming JSON update after each batch
+          if (state.enableStreaming) {
+            generateStreamingJSON();
+          }
         },
       );
 
-      // Generate translated JSON when done
+      // Generate final translated JSON when done
       if (translationInProgress.current) {
         await generateTranslatedJSON();
-        setState((prev) => ({ ...prev, isTranslating: false }));
+        setState((prev) => ({
+          ...prev,
+          isTranslating: false,
+          isStreaming: false,
+        }));
 
         // Show completion notification
         const duration = (Date.now() - translationStartTime.current) / 1000;
@@ -327,6 +348,7 @@ export function TranslationPage() {
           `Batch translation failed: ${error instanceof Error ? error.message : "Unknown error"}`,
         ],
         isTranslating: false,
+        isStreaming: false,
       }));
 
       // Show error notification
@@ -387,6 +409,11 @@ export function TranslationPage() {
           ),
         }));
 
+        // Generate streaming JSON update after each successful translation
+        if (result.success && state.enableStreaming) {
+          generateStreamingJSON();
+        }
+
         // Small delay to prevent overwhelming the API
         if (translationInProgress.current) {
           await new Promise((resolve) => setTimeout(resolve, 500));
@@ -414,7 +441,11 @@ export function TranslationPage() {
     // Generate translated JSON when done
     if (translationInProgress.current) {
       await generateTranslatedJSON();
-      setState((prev) => ({ ...prev, isTranslating: false }));
+      setState((prev) => ({
+        ...prev,
+        isTranslating: false,
+        isStreaming: false,
+      }));
 
       // Show completion notification
       const duration = (Date.now() - translationStartTime.current) / 1000;
@@ -432,6 +463,39 @@ export function TranslationPage() {
         errorItems,
         duration,
       );
+    }
+  };
+
+  const generateStreamingJSON = () => {
+    try {
+      const originalParsed = JSON.parse(state.originalJSON);
+      const translations = new Map<string, string>();
+
+      // Only include completed translations for streaming
+      state.progressItems.forEach((item) => {
+        if (item.status === "completed" && item.translatedValue) {
+          translations.set(item.key, item.translatedValue);
+        }
+      });
+
+      if (translations.size > 0) {
+        const { translatedJSON, errors } = JSONProcessor.applyTranslations(
+          originalParsed,
+          translations,
+        );
+
+        setState((prev) => ({
+          ...prev,
+          translatedJSON: JSONProcessor.formatJSON(translatedJSON),
+          errors:
+            errors.length > 0
+              ? [...prev.errors, ...errors.map((e) => e.error)]
+              : prev.errors,
+        }));
+      }
+    } catch (error) {
+      console.warn("Streaming JSON generation failed:", error);
+      // Don't add to errors array for streaming failures as they're non-critical
     }
   };
 
@@ -587,6 +651,8 @@ export function TranslationPage() {
               batchProgress={state.batchProgress}
               estimatedTime={state.estimatedTime}
               useOptimizedTranslation={state.useOptimizedTranslation}
+              isStreaming={state.isStreaming}
+              enableStreaming={state.enableStreaming}
             />
           </div>
         )}
@@ -616,9 +682,11 @@ export function TranslationPage() {
                 onChange={() => {}} // Read-only
                 title="Translated JSON"
                 description={
-                  hasCompletedTranslations
-                    ? `Translated to ${targetLanguageName}`
-                    : "Translation results will appear here"
+                  state.isStreaming && state.enableStreaming
+                    ? `🔄 Streaming results to ${targetLanguageName}...`
+                    : hasCompletedTranslations
+                      ? `Translated to ${targetLanguageName}`
+                      : "Translation results will appear here"
                 }
                 readonly={true}
                 showValidation={false}
@@ -628,6 +696,7 @@ export function TranslationPage() {
                 }
                 downloadFilename={`translation_${state.config.targetLanguage}.json`}
                 className="h-full"
+                isStreaming={state.isStreaming && state.enableStreaming}
               />
             </div>
           </div>
@@ -697,6 +766,10 @@ export function TranslationPage() {
         useOptimizedTranslation={state.useOptimizedTranslation}
         onOptimizationToggle={(enabled) =>
           setState((prev) => ({ ...prev, useOptimizedTranslation: enabled }))
+        }
+        enableStreaming={state.enableStreaming}
+        onStreamingToggle={(enabled) =>
+          setState((prev) => ({ ...prev, enableStreaming: enabled }))
         }
       />
     </div>

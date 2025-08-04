@@ -25,6 +25,7 @@ export interface JSONEditorProps {
   onFileUpload?: (content: string) => void;
   onDownload?: () => void;
   downloadFilename?: string;
+  isStreaming?: boolean;
 }
 
 // Simple JSON syntax highlighter
@@ -65,6 +66,7 @@ export function JSONEditor({
   onFileUpload,
   onDownload,
   downloadFilename = "translated.json",
+  isStreaming = false,
 }: JSONEditorProps) {
   const [validation, setValidation] = React.useState<{
     valid: boolean;
@@ -164,6 +166,25 @@ export function JSONEditor({
           line-height: 1.5;
           font-size: 14px;
         }
+        .streaming-glow {
+          animation: streaming-pulse 2s ease-in-out infinite;
+        }
+        @keyframes streaming-pulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+          50% { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+        }
+        .streaming-gradient {
+          background: linear-gradient(90deg,
+            rgba(59, 130, 246, 0.05) 0%,
+            rgba(59, 130, 246, 0.1) 50%,
+            rgba(59, 130, 246, 0.05) 100%);
+          background-size: 200% 100%;
+          animation: streaming-sweep 3s ease-in-out infinite;
+        }
+        @keyframes streaming-sweep {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
       `}</style>
 
       <Card className={cn("flex flex-col h-full", className)}>
@@ -197,7 +218,7 @@ export function JSONEditor({
                   ✨ Format
                 </Button>
               )}
-              {readonly && validation.valid && (
+              {readonly && validation.valid && !isStreaming && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -206,6 +227,11 @@ export function JSONEditor({
                   {showSyntaxHighlight ? "📝" : "🎨"}{" "}
                   {showSyntaxHighlight ? "Edit" : "Highlight"}
                 </Button>
+              )}
+              {isStreaming && (
+                <Badge variant="secondary" className="text-xs animate-pulse">
+                  🔄 Live streaming
+                </Badge>
               )}
               {!readonly && value.trim() && (
                 <Button
@@ -280,8 +306,28 @@ export function JSONEditor({
           )}
 
           {/* Editor Area */}
-          <div className="flex-1 relative min-h-0">
-            {readonly && showSyntaxHighlight && validation.valid ? (
+          <div
+            className={cn(
+              "flex-1 relative min-h-0",
+              isStreaming && "streaming-glow",
+            )}
+          >
+            {/* Streaming overlay indicator */}
+            {isStreaming && (
+              <div className="absolute top-2 right-2 z-10">
+                <Badge
+                  variant="secondary"
+                  className="text-xs animate-pulse shadow-md bg-blue-100 text-blue-800 border-blue-200"
+                >
+                  🔄 Streaming...
+                </Badge>
+              </div>
+            )}
+
+            {readonly &&
+            showSyntaxHighlight &&
+            validation.valid &&
+            !isStreaming ? (
               // Syntax highlighted view
               <div
                 className={cn(
@@ -307,6 +353,8 @@ export function JSONEditor({
                   "focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
                   "placeholder:text-gray-500",
                   readonly && "bg-gray-50 cursor-default",
+                  isStreaming && "border-blue-300 streaming-gradient",
+                  !isStreaming && readonly && "bg-gray-50",
                   "min-h-[600px]", // Ensure minimum height
                 )}
                 spellCheck={false}
@@ -327,7 +375,13 @@ export function JSONEditor({
                 ` • ${value.split("\n").length} lines`}
             </span>
             {readonly ? (
-              <span>Read-only</span>
+              isStreaming ? (
+                <span className="text-blue-600 animate-pulse">
+                  🔄 Live updating...
+                </span>
+              ) : (
+                <span>Read-only</span>
+              )
             ) : (
               <span>Tab for indent • Ctrl+A to select all</span>
             )}
