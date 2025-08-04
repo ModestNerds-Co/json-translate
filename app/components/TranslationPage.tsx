@@ -164,7 +164,12 @@ export function TranslationPage() {
     if (translationInProgress.current) return;
 
     translationInProgress.current = true;
-    setState((prev) => ({ ...prev, isTranslating: true, isPaused: false }));
+    setState((prev) => ({
+      ...prev,
+      isTranslating: true,
+      isPaused: false,
+      isStreaming: prev.enableStreaming,
+    }));
 
     try {
       await processTranslations();
@@ -211,6 +216,7 @@ export function TranslationPage() {
       ...prev,
       isTranslating: true,
       isPaused: false,
+      isStreaming: prev.enableStreaming,
     }));
 
     const parallelTranslator = new ParallelTranslator(state.config);
@@ -248,6 +254,15 @@ export function TranslationPage() {
               return pItem;
             });
 
+            // Generate streaming JSON update after each retry completion
+            if (prev.enableStreaming && result.success) {
+              console.log(
+                "Generating streaming JSON after retry completion:",
+                result.key,
+              );
+              generateStreamingJSONWithItems(updatedItems);
+            }
+
             return {
               ...prev,
               progressItems: updatedItems,
@@ -259,6 +274,7 @@ export function TranslationPage() {
       setState((prev) => ({
         ...prev,
         isTranslating: false,
+        isStreaming: false,
         parallelProgress: undefined,
       }));
 
@@ -271,6 +287,7 @@ export function TranslationPage() {
       setState((prev) => ({
         ...prev,
         isTranslating: false,
+        isStreaming: false,
         parallelProgress: undefined,
         errors: [
           ...prev.errors,
