@@ -1,10 +1,10 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { RedisDashboard } from '../components/RedisDashboard'
+import { createFileRoute } from "@tanstack/react-router";
+import { Homepage } from "../components/Homepage";
 
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute("/")({
   component: HomeComponent,
-})
+});
 
 function HomeComponent() {
-  return <RedisDashboard />
+  return <Homepage />;
 }
