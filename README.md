@@ -2,7 +2,7 @@
 
 A powerful, AI-powered JSON localization file translator with real-time streaming, batch processing, and multi-provider support. Built with TypeScript, React, and modern web technologies.
 
-![JSON Translator](https://via.placeholder.com/800x400/4F46E5/FFFFFF?text=JSON+Translator)
+![JSON Translator](https://placehold.co/800x400/4F46E5/FFFFFF?text=JSON+Translator)
 
 ## ✨ Features
 
@@ -41,7 +41,7 @@ A powerful, AI-powered JSON localization file translator with real-time streamin
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ 
+- Node.js 18+
 - Modern web browser
 - API key from OpenAI or Anthropic
 
@@ -104,7 +104,7 @@ A powerful, AI-powered JSON localization file translator with real-time streamin
 {
   "welcome": "Bienvenido a nuestra aplicación",
   "user": {
-    "name": "Nombre", 
+    "name": "Nombre",
     "email": "Dirección de correo electrónico"
   },
   "buttons": {
@@ -125,7 +125,7 @@ Watch translations appear live as they complete:
 #### Batch Processing
 Optimal performance for large files:
 - **Small files** (1-50 keys): ~10-30 seconds
-- **Medium files** (50-500 keys): ~1-5 minutes  
+- **Medium files** (50-500 keys): ~1-5 minutes
 - **Large files** (500+ keys): ~5-15 minutes
 
 #### Error Handling
@@ -144,7 +144,7 @@ Robust error recovery:
 2. Select model: `gpt-4o` (recommended), `gpt-4o-mini` (cost-effective), or others
 3. Set rate limits based on your tier
 
-#### Anthropic Setup  
+#### Anthropic Setup
 1. Get API key from [Anthropic Console](https://console.anthropic.com/)
 2. Select model: `claude-3-5-sonnet-20241022` (recommended) or others
 3. Configure rate limits for your usage tier
@@ -153,7 +153,7 @@ Robust error recovery:
 
 #### Rate Limits (Requests per minute)
 - **OpenAI Tier 1**: 500 RPM (default)
-- **OpenAI Tier 2+**: 1000+ RPM  
+- **OpenAI Tier 2+**: 1000+ RPM
 - **Anthropic Tier 1**: 300 RPM (default)
 - **Anthropic Tier 2+**: 1000+ RPM
 
@@ -248,7 +248,7 @@ class AnthropicTranslator extends Translator { ... }
 
 ### Security Best Practices
 - **Input validation** for all JSON uploads
-- **XSS protection** with proper sanitization  
+- **XSS protection** with proper sanitization
 - **Rate limiting** to prevent abuse
 - **Error handling** without information leakage
 
@@ -265,7 +265,7 @@ class AnthropicTranslator extends Translator { ... }
 ```json
 {
   "@tanstack/react-router": "^1.120.5",
-  "@tanstack/react-start": "^1.120.5", 
+  "@tanstack/react-start": "^1.120.5",
   "react": "^19.1.0",
   "lucide-react": "^0.454.0",
   "tailwind-merge": "^2.5.4"
@@ -277,7 +277,7 @@ class AnthropicTranslator extends Translator { ... }
 # Start development server
 npm run dev
 
-# Build for production  
+# Build for production
 npm run build
 
 # Start production server
@@ -298,11 +298,11 @@ class NewProviderTranslator extends Translator {
   async translateKey(key: string, value: string): Promise<TranslationResult> {
     // Implement API calls
   }
-  
+
   validateConfig(): boolean {
     // Validate configuration
   }
-  
+
   getProvider(): TranslationProvider {
     // Return provider metadata
   }
@@ -352,7 +352,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - **OpenAI** for providing excellent language models
-- **Anthropic** for Claude's impressive translation capabilities  
+- **Anthropic** for Claude's impressive translation capabilities
 - **React Team** for the amazing framework
 - **Tailwind CSS** for beautiful, utility-first styling
 - **TanStack** for excellent routing and state management tools
