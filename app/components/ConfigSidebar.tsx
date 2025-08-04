@@ -9,6 +9,7 @@ import {
 import { Button } from "./Button";
 import { Input } from "./Input";
 import { Select, SelectItem } from "./Select";
+import { SearchableSelect, SearchableSelectOption } from "./SearchableSelect";
 import { Alert, AlertDescription } from "./Alert";
 import { Badge } from "./Badge";
 import { Spinner } from "./Spinner";
@@ -130,6 +131,44 @@ export function ConfigSidebar({
     return SUPPORTED_LANGUAGES.find((lang) => lang.code === code)?.name || code;
   };
 
+  // Convert SUPPORTED_LANGUAGES to SearchableSelectOption format
+  const languageOptions: SearchableSelectOption[] = SUPPORTED_LANGUAGES.map(
+    (lang) => ({
+      value: lang.code,
+      label: lang.name,
+      description: lang.code.toUpperCase(),
+    }),
+  );
+
+  // Source language options with auto-detect option
+  const sourceLanguageOptions: SearchableSelectOption[] = [
+    {
+      value: "",
+      label: "Auto-detect",
+      description: "Automatically detect source language",
+    },
+    ...languageOptions,
+  ];
+
+  // Convert SUPPORTED_PROVIDERS to SearchableSelectOption format
+  const providerOptions: SearchableSelectOption[] = SUPPORTED_PROVIDERS.map(
+    (provider) => ({
+      value: provider.name.toLowerCase(),
+      label: provider.name,
+      description: `${provider.models.length} models available`,
+    }),
+  );
+
+  // Convert available models to SearchableSelectOption format
+  const modelOptions: SearchableSelectOption[] = availableModels.map(
+    (model) => ({
+      value: model,
+      label: model,
+      description:
+        config.provider === "openai" ? "OpenAI Model" : "Anthropic Model",
+    }),
+  );
+
   return (
     <>
       {/* Overlay */}
@@ -212,39 +251,32 @@ export function ConfigSidebar({
               <label className="text-sm font-medium text-gray-700">
                 Translation Provider
               </label>
-              <Select
+              <SearchableSelect
+                options={providerOptions}
                 value={config.provider}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                  handleProviderChange(e.target.value)
-                }
-              >
-                {SUPPORTED_PROVIDERS.map((provider) => (
-                  <SelectItem
-                    key={provider.name}
-                    value={provider.name.toLowerCase()}
-                  >
-                    {provider.name}
-                  </SelectItem>
-                ))}
-              </Select>
+                placeholder="Select provider..."
+                searchPlaceholder="Search providers..."
+                onChange={(value) => handleProviderChange(value)}
+                emptyMessage="No providers found"
+                maxHeight="150px"
+              />
             </div>
 
             {/* Model Selection */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Model</label>
-              <Select
+              <SearchableSelect
+                options={modelOptions}
                 value={config.model}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                  onConfigChange({ ...config, model: e.target.value })
+                placeholder="Select model..."
+                searchPlaceholder="Search models..."
+                onChange={(value) =>
+                  onConfigChange({ ...config, model: value })
                 }
                 disabled={!config.provider}
-              >
-                {availableModels.map((model) => (
-                  <SelectItem key={model} value={model}>
-                    {model}
-                  </SelectItem>
-                ))}
-              </Select>
+                emptyMessage="No models found"
+                maxHeight="200px"
+              />
             </div>
 
             {/* API Key */}
@@ -271,18 +303,17 @@ export function ConfigSidebar({
               <label className="text-sm font-medium text-gray-700">
                 Target Language
               </label>
-              <Select
+              <SearchableSelect
+                options={languageOptions}
                 value={config.targetLanguage}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                  onConfigChange({ ...config, targetLanguage: e.target.value })
+                placeholder="Select target language..."
+                searchPlaceholder="Search languages..."
+                onChange={(value) =>
+                  onConfigChange({ ...config, targetLanguage: value })
                 }
-              >
-                {SUPPORTED_LANGUAGES.map((lang) => (
-                  <SelectItem key={lang.code} value={lang.code}>
-                    {lang.name} ({lang.code})
-                  </SelectItem>
-                ))}
-              </Select>
+                emptyMessage="No languages found"
+                maxHeight="200px"
+              />
             </div>
 
             {/* Source Language */}
@@ -291,22 +322,20 @@ export function ConfigSidebar({
                 Source Language
                 <span className="text-gray-400 ml-1">(optional)</span>
               </label>
-              <Select
+              <SearchableSelect
+                options={sourceLanguageOptions}
                 value={config.sourceLanguage || ""}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                placeholder="Auto-detect or select language..."
+                searchPlaceholder="Search languages..."
+                onChange={(value) =>
                   onConfigChange({
                     ...config,
-                    sourceLanguage: e.target.value || undefined,
+                    sourceLanguage: value || undefined,
                   })
                 }
-              >
-                <SelectItem value="">Auto-detect</SelectItem>
-                {SUPPORTED_LANGUAGES.map((lang) => (
-                  <SelectItem key={lang.code} value={lang.code}>
-                    {lang.name} ({lang.code})
-                  </SelectItem>
-                ))}
-              </Select>
+                emptyMessage="No languages found"
+                maxHeight="200px"
+              />
             </div>
 
             {/* Connection Status */}
