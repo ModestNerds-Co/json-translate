@@ -6,7 +6,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { seo } from "../../utils/seo";
-import "../global.css";
+import css from "../global.css?url";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -24,6 +24,7 @@ export const Route = createRootRoute({
       }),
     ],
     links: [
+      { rel: "stylesheet", href: css },
       {
         rel: "preconnect",
         href: "https://fonts.googleapis.com",
