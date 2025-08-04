@@ -280,22 +280,18 @@ export function TranslationPage() {
         // Progress callback
         (progress: BatchProgress) => {
           setState((prev) => ({ ...prev, batchProgress: progress }));
-
-          // Generate streaming JSON update
-          if (state.enableStreaming) {
-            generateStreamingJSON();
-          }
         },
         // Batch complete callback
         (results: BatchTranslationResult[]) => {
-          setState((prev) => ({
-            ...prev,
-            progressItems: prev.progressItems.map((pItem) => {
+          setState((prev) => {
+            const updatedItems = prev.progressItems.map((pItem) => {
               const result = results.find((r) => r.key === pItem.key);
               if (result) {
                 return {
                   ...pItem,
-                  status: result.success ? "completed" : "error",
+                  status: result.success
+                    ? ("completed" as const)
+                    : ("error" as const),
                   translatedValue: result.success
                     ? result.translatedValue
                     : undefined,
@@ -303,42 +299,75 @@ export function TranslationPage() {
                 };
               }
               return pItem;
-            }),
-          }));
+            });
 
-          // Generate streaming JSON update after each batch
-          if (state.enableStreaming) {
-            generateStreamingJSON();
-          }
+            // Generate streaming JSON update after each batch
+            if (prev.enableStreaming) {
+              console.log(
+                "Generating streaming JSON after batch completion, completed items:",
+                updatedItems.filter((item) => item.status === "completed")
+                  .length,
+              );
+              generateStreamingJSONWithItems(updatedItems);
+            }
+
+            return {
+              ...prev,
+              progressItems: updatedItems,
+            };
+          });
         },
       );
 
       // Generate final translated JSON when done
       if (translationInProgress.current) {
-        await generateTranslatedJSON();
-        setState((prev) => ({
-          ...prev,
-          isTranslating: false,
-          isStreaming: false,
-        }));
+        setState((prev) => {
+          // Generate final JSON with current state
+          console.log(
+            "Generating final JSON on completion, completed items:",
+            prev.progressItems.filter((item) => item.status === "completed")
+              .length,
+          );
+          generateTranslatedJSONWithItems(prev.progressItems);
 
-        // Show completion notification
-        const duration = (Date.now() - translationStartTime.current) / 1000;
-        const totalItems = state.progressItems.length;
-        const completedItems = state.progressItems.filter(
-          (item) => item.status === "completed",
-        ).length;
-        const errorItems = state.progressItems.filter(
-          (item) => item.status === "error",
-        ).length;
+          // Calculate completion stats with current state
+          const totalItems = prev.progressItems.length;
+          const completedItems = prev.progressItems.filter(
+            (item) => item.status === "completed",
+          ).length;
+          const errorItems = prev.progressItems.filter(
+            (item) => item.status === "error",
+          ).length;
 
-        await notifyTranslationComplete(
-          totalItems,
-          completedItems,
-          errorItems,
-          duration,
-        );
+          // Show completion notification
+          const duration = (Date.now() - translationStartTime.current) / 1000;
+          notifyTranslationComplete(
+            totalItems,
+            completedItems,
+            errorItems,
+            duration,
+          );
+
+          return {
+            ...prev,
+            isTranslating: false,
+            isStreaming: false,
+          };
+        });
       }
+
+      // Fallback: Ensure final JSON is generated even if streaming didn't work
+      setTimeout(() => {
+        if (translationInProgress.current === false) {
+          const completedItems = state.progressItems.filter(
+            (item) => item.status === "completed",
+          );
+          if (completedItems.length > 0 && !state.translatedJSON.trim()) {
+            console.log("Fallback: Generating final JSON");
+            generateTranslatedJSONWithItems(state.progressItems);
+          }
+        }
+      }, 100);
     } catch (error) {
       console.error("Batch translation failed:", error);
       setState((prev) => ({
@@ -393,26 +422,36 @@ export function TranslationPage() {
         console.log(`Translation result:`, result);
 
         // Update item with translation result
-        setState((prev) => ({
-          ...prev,
-          progressItems: prev.progressItems.map((pItem, index) =>
+        setState((prev) => {
+          const updatedItems = prev.progressItems.map((pItem, index) =>
             index === i
               ? {
                   ...pItem,
-                  status: result.success ? "completed" : "error",
+                  status: result.success
+                    ? ("completed" as const)
+                    : ("error" as const),
                   translatedValue: result.success
                     ? result.translatedValue
                     : undefined,
                   error: result.success ? undefined : result.error,
                 }
               : pItem,
-          ),
-        }));
+          );
 
-        // Generate streaming JSON update after each successful translation
-        if (result.success && state.enableStreaming) {
-          generateStreamingJSON();
-        }
+          // Generate streaming JSON update after each successful translation
+          if (result.success && prev.enableStreaming) {
+            console.log(
+              "Generating streaming JSON after individual translation:",
+              item.key,
+            );
+            generateStreamingJSONWithItems(updatedItems);
+          }
+
+          return {
+            ...prev,
+            progressItems: updatedItems,
+          };
+        });
 
         // Small delay to prevent overwhelming the API
         if (translationInProgress.current) {
@@ -440,43 +479,65 @@ export function TranslationPage() {
 
     // Generate translated JSON when done
     if (translationInProgress.current) {
-      await generateTranslatedJSON();
-      setState((prev) => ({
-        ...prev,
-        isTranslating: false,
-        isStreaming: false,
-      }));
+      setState((prev) => {
+        // Generate final JSON with current state
+        generateTranslatedJSONWithItems(prev.progressItems);
 
-      // Show completion notification
-      const duration = (Date.now() - translationStartTime.current) / 1000;
-      const totalItems = state.progressItems.length;
-      const completedItems = state.progressItems.filter(
-        (item) => item.status === "completed",
-      ).length;
-      const errorItems = state.progressItems.filter(
-        (item) => item.status === "error",
-      ).length;
+        // Calculate completion stats with current state
+        const totalItems = prev.progressItems.length;
+        const completedItems = prev.progressItems.filter(
+          (item) => item.status === "completed",
+        ).length;
+        const errorItems = prev.progressItems.filter(
+          (item) => item.status === "error",
+        ).length;
 
-      await notifyTranslationComplete(
-        totalItems,
-        completedItems,
-        errorItems,
-        duration,
-      );
+        // Show completion notification
+        const duration = (Date.now() - translationStartTime.current) / 1000;
+        notifyTranslationComplete(
+          totalItems,
+          completedItems,
+          errorItems,
+          duration,
+        );
+
+        return {
+          ...prev,
+          isTranslating: false,
+          isStreaming: false,
+        };
+      });
     }
   };
 
   const generateStreamingJSON = () => {
+    generateStreamingJSONWithItems(state.progressItems);
+  };
+
+  const generateStreamingJSONWithItems = (items: TranslationProgressItem[]) => {
     try {
+      if (!state.originalJSON || !state.originalJSON.trim()) {
+        console.warn("No original JSON available for streaming");
+        return;
+      }
+
       const originalParsed = JSON.parse(state.originalJSON);
       const translations = new Map<string, string>();
 
       // Only include completed translations for streaming
-      state.progressItems.forEach((item) => {
+      items.forEach((item) => {
         if (item.status === "completed" && item.translatedValue) {
           translations.set(item.key, item.translatedValue);
         }
       });
+
+      console.log(
+        "Streaming JSON generation: found",
+        translations.size,
+        "completed translations out of",
+        items.length,
+        "total items",
+      );
 
       if (translations.size > 0) {
         const { translatedJSON, errors } = JSONProcessor.applyTranslations(
@@ -500,15 +561,37 @@ export function TranslationPage() {
   };
 
   const generateTranslatedJSON = async () => {
+    generateTranslatedJSONWithItems(state.progressItems);
+  };
+
+  const generateTranslatedJSONWithItems = (
+    items: TranslationProgressItem[],
+  ) => {
     try {
+      if (!state.originalJSON || !state.originalJSON.trim()) {
+        setState((prev) => ({
+          ...prev,
+          errors: [
+            ...prev.errors,
+            "No original JSON available for translation",
+          ],
+        }));
+        return;
+      }
+
       const originalParsed = JSON.parse(state.originalJSON);
       const translations = new Map<string, string>();
 
-      state.progressItems.forEach((item) => {
+      items.forEach((item) => {
         if (item.status === "completed" && item.translatedValue) {
           translations.set(item.key, item.translatedValue);
         }
       });
+
+      if (translations.size === 0) {
+        console.warn("No completed translations found");
+        return;
+      }
 
       const { translatedJSON, errors } = JSONProcessor.applyTranslations(
         originalParsed,
@@ -524,6 +607,7 @@ export function TranslationPage() {
             : prev.errors,
       }));
     } catch (error) {
+      console.error("Failed to generate translated JSON:", error);
       setState((prev) => ({
         ...prev,
         errors: [
