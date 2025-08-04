@@ -363,6 +363,44 @@ export function ConfigSidebar({
               </div>
             </div>
 
+            {/* Notification Settings */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Notifications
+              </label>
+              <div className="space-y-3">
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">
+                        🔔 Completion Alerts
+                      </span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        const { notificationManager } = await import(
+                          "../lib/notifications"
+                        );
+                        const result =
+                          await notificationManager.requestPermission();
+                        if (result.success) {
+                          notificationManager.showTestNotification();
+                        }
+                      }}
+                    >
+                      Test
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    Get system notifications when translations complete, even
+                    when the tab isn't active
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Action Buttons */}
             <div className="space-y-3 pt-4 border-t">
               <Button

@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from "./Alert";
 import { Badge } from "./Badge";
 import { ConfigSidebar } from "./ConfigSidebar";
 import { JSONEditor } from "./JSONEditor";
+import { NotificationStatus } from "./NotificationStatus";
 import {
   TranslationProgress,
   TranslationProgressItem,
@@ -28,6 +29,12 @@ import {
   BatchTranslationResult,
   BatchProgress,
 } from "../lib/translation/batch-translator";
+import {
+  notifyTranslationComplete,
+  notifyTranslationStarted,
+  notifyTranslationError,
+  requestNotificationPermission,
+} from "../lib/notifications";
 
 interface TranslationState {
   originalJSON: string;
@@ -67,6 +74,7 @@ export function TranslationPage() {
   });
 
   const translationInProgress = React.useRef(false);
+  const translationStartTime = React.useRef(0);
 
   // Extract translatable keys when JSON changes
   React.useEffect(() => {
@@ -111,12 +119,18 @@ export function TranslationPage() {
     }
 
     translationInProgress.current = true;
+    translationStartTime.current = Date.now();
+
     setState((prev) => ({
       ...prev,
       isTranslating: true,
       isPaused: false,
       currentIndex: 0,
     }));
+
+    // Request notification permission and notify start
+    await requestNotificationPermission();
+    await notifyTranslationStarted(state.progressItems.length);
 
     try {
       await processTranslations();
@@ -199,7 +213,6 @@ export function TranslationPage() {
       translationInProgress.current = true;
       setState((prev) => ({
         ...prev,
-        currentIndex: firstFailedIndex,
         isTranslating: true,
         isPaused: false,
       }));
@@ -287,6 +300,23 @@ export function TranslationPage() {
       if (translationInProgress.current) {
         await generateTranslatedJSON();
         setState((prev) => ({ ...prev, isTranslating: false }));
+
+        // Show completion notification
+        const duration = (Date.now() - translationStartTime.current) / 1000;
+        const totalItems = state.progressItems.length;
+        const completedItems = state.progressItems.filter(
+          (item) => item.status === "completed",
+        ).length;
+        const errorItems = state.progressItems.filter(
+          (item) => item.status === "error",
+        ).length;
+
+        await notifyTranslationComplete(
+          totalItems,
+          completedItems,
+          errorItems,
+          duration,
+        );
       }
     } catch (error) {
       console.error("Batch translation failed:", error);
@@ -298,6 +328,11 @@ export function TranslationPage() {
         ],
         isTranslating: false,
       }));
+
+      // Show error notification
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      await notifyTranslationError(errorMessage);
     }
   };
 
@@ -380,6 +415,23 @@ export function TranslationPage() {
     if (translationInProgress.current) {
       await generateTranslatedJSON();
       setState((prev) => ({ ...prev, isTranslating: false }));
+
+      // Show completion notification
+      const duration = (Date.now() - translationStartTime.current) / 1000;
+      const totalItems = state.progressItems.length;
+      const completedItems = state.progressItems.filter(
+        (item) => item.status === "completed",
+      ).length;
+      const errorItems = state.progressItems.filter(
+        (item) => item.status === "error",
+      ).length;
+
+      await notifyTranslationComplete(
+        totalItems,
+        completedItems,
+        errorItems,
+        duration,
+      );
     }
   };
 
@@ -480,6 +532,7 @@ export function TranslationPage() {
                   <Badge variant="outline" className="text-xs">
                     Target: {targetLanguageName}
                   </Badge>
+                  <NotificationStatus showPermissionButton={false} />
                 </div>
               )}
               <Button
