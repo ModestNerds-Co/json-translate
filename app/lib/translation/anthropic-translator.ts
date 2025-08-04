@@ -28,7 +28,7 @@ export class AnthropicTranslator extends Translator {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${this.config.apiKey}`,
+          "x-api-key": this.config.apiKey,
           "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
@@ -132,7 +132,7 @@ Please translate the text to ${this.config.targetLanguage}. Consider the context
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${this.config.apiKey}`,
+          "x-api-key": this.config.apiKey,
           "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
